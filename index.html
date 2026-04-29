@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Daily Memo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Noto+Sans+JP:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #FAF9F6;
+  --surface: #FFFFFF;
+  --surface-2: #F5F3EE;
+  --border: #E8E4DC;
+  --text: #1C1A17;
+  --text-2: #6B6560;
+  --text-3: #A09890;
+  --accent: #2B4A3A;
+  --accent-mid: #3D6B55;
+  --accent-light: #EAF2EC;
+  --accent-glow: rgba(43,74,58,0.12);
+  --gold: #C9A84C;
+  --danger: #9B3A2F;
+  --danger-light: #FDF0EE;
+  --radius-sm: 8px;
+  --radius: 14px;
+  --shadow-sm: 0 1px 4px rgba(28,26,23,0.06);
+  --shadow-lg: 0 12px 48px rgba(28,26,23,0.12), 0 4px 12px rgba(28,26,23,0.06);
+  --t: 0.22s cubic-bezier(0.4,0,0.2,1);
+  --t-spring: 0.38s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; overflow: hidden; }
+body { font-family: 'Noto Sans JP', sans-serif; background: var(--bg); display: flex; flex-direction: column; color: var(--text); }
+
+/* ── HEADER ── */
+.header {
+  background: var(--accent);
+  padding: 0 20px;
+  height: 60px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0; position: relative; z-index: 10;
+}
+.header-left { display: flex; align-items: baseline; gap: 8px; }
+.header-title { font-family: 'Playfair Display', serif; font-weight: 700; font-size: 20px; color: #fff; letter-spacing: 0.02em; }
+.header-sub { font-size: 11px; color: rgba(255,255,255,0.5); font-family: 'JetBrains Mono', monospace; letter-spacing: 0.08em; text-transform: uppercase; }
+.header-right { display: flex; align-items: center; gap: 8px; }
+.header-count { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: rgba(255,255,255,0.55); background: rgba(255,255,255,0.1); padding: 3px 10px; border-radius: 20px; letter-spacing: 0.04em; }
+.header-settings-btn { background: rgba(255,255,255,0.12); border: none; color: rgba(255,255,255,0.8); width: 32px; height: 32px; border-radius: 50%; font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background var(--t); }
+.header-settings-btn:active { background: rgba(255,255,255,0.22); }
+.header::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--gold), transparent 60%); }
+
+/* ── SEARCH ── */
+.search { padding: 12px 16px; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.search-inner { display: flex; align-items: center; background: var(--surface-2); border: 1.5px solid var(--border); border-radius: 10px; padding: 0 14px; gap: 8px; transition: border-color var(--t), box-shadow var(--t); }
+.search-inner:focus-within { border-color: var(--accent-mid); box-shadow: 0 0 0 3px var(--accent-glow); background: var(--surface); }
+.search-icon { font-size: 14px; color: var(--text-3); flex-shrink: 0; }
+.search input { flex: 1; min-width: 0; padding: 10px 0; border: none; background: transparent; font-family: 'Noto Sans JP', sans-serif; font-size: 16px; color: var(--text); outline: none; -webkit-appearance: none; }
+.search input::placeholder { color: var(--text-3); }
+.search-clear { width: 20px; height: 20px; border: none; background: var(--text-3); color: #fff; border-radius: 50%; font-size: 11px; cursor: pointer; display: none; align-items: center; justify-content: center; flex-shrink: 0; font-family: inherit; line-height: 1; transition: background var(--t); }
+.search-clear.visible { display: flex; }
+.search-clear:active { background: var(--text-2); }
+
+/* ── LIST ── */
+.list { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 14px 14px 90px; }
+.list::-webkit-scrollbar { width: 4px; }
+.list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.empty { text-align: center; padding: 80px 24px; }
+.empty-icon { font-size: 52px; margin-bottom: 16px; opacity: 0.25; display: block; }
+.empty-title { font-family: 'Playfair Display', serif; font-size: 20px; color: var(--text-2); margin-bottom: 8px; }
+.empty-sub { font-size: 14px; color: var(--text-3); line-height: 1.7; white-space: pre-line; }
+
+/* ── SWIPE CARD ── */
+.swipe-wrap { position: relative; overflow: hidden; margin-bottom: 8px; border-radius: var(--radius); }
+.delete-bg { position: absolute; right: 0; top: 0; bottom: 0; width: 80px; background: var(--danger); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; border-radius: var(--radius); gap: 4px; flex-direction: column; cursor: pointer; letter-spacing: 0.04em; visibility: hidden; }
+.swipe-wrap.is-swiping .delete-bg { visibility: visible; }
+.delete-bg-icon { font-size: 20px; }
+
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; cursor: pointer; position: relative; z-index: 1; box-shadow: var(--shadow-sm); user-select: none; transition: box-shadow var(--t), transform 0.18s ease; }
+.card::before { content: ''; position: absolute; left: 0; top: 12px; bottom: 12px; width: 3px; background: var(--accent); border-radius: 0 2px 2px 0; opacity: 0; transition: opacity var(--t); }
+.card:active { transform: scale(0.985); box-shadow: none; }
+.card:hover::before { opacity: 1; }
+
+.card-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.card-date { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-3); letter-spacing: 0.04em; }
+.card-backup-badge { font-size: 10px; color: var(--accent-mid); opacity: 0.65; display: flex; align-items: center; gap: 2px; font-family: 'JetBrains Mono', monospace; }
+.card-title { font-size: 15px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.4; margin-bottom: 4px; }
+.card-preview { font-size: 12.5px; color: var(--text-2); line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-weight: 300; }
+
+/* ── FAB ── */
+.fab-wrap { position: fixed; right: 20px; bottom: 28px; z-index: 100; }
+.fab { width: 56px; height: 56px; border-radius: 50%; border: none; background: var(--accent); color: #fff; font-size: 26px; cursor: pointer; box-shadow: 0 6px 24px rgba(43,74,58,0.35), 0 2px 6px rgba(43,74,58,0.2); display: flex; align-items: center; justify-content: center; transition: transform var(--t-spring), box-shadow var(--t); }
+.fab:active { transform: scale(0.9); box-shadow: 0 2px 8px rgba(43,74,58,0.25); }
+.fab:hover { transform: scale(1.06); }
+
+/* ── TOAST ── */
+.toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--text); color: rgba(255,255,255,0.92); padding: 12px 16px 12px 18px; border-radius: 12px; display: flex; gap: 12px; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.25s, transform 0.3s cubic-bezier(0.34,1.56,0.64,1); white-space: nowrap; font-size: 13.5px; z-index: 500; box-shadow: var(--shadow-lg); }
+.toast.show { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0); }
+.toast-text { opacity: 0.75; }
+.toast-undo { background: none; border: 1px solid rgba(255,255,255,0.25); color: #fff; font-weight: 600; font-size: 12.5px; cursor: pointer; padding: 4px 12px; border-radius: 6px; font-family: 'Noto Sans JP', sans-serif; transition: background var(--t); }
+.toast-undo:active { background: rgba(255,255,255,0.12); }
+
+/* ── OVERLAY / SHEET ── */
+.detail-overlay { position: fixed; inset: 0; background: rgba(28,26,23,0.4); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 300; }
+.detail-overlay.show { opacity: 1; pointer-events: auto; }
+.detail { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-radius: 22px 22px 0 0; padding: 0 22px 44px; max-height: 92vh; overflow-y: auto; -webkit-overflow-scrolling: touch; transform: translateY(100%); transition: transform 0.38s cubic-bezier(0.32,0.72,0,1); z-index: 400; }
+.detail.show { transform: translateY(0); }
+.detail::-webkit-scrollbar { width: 3px; }
+.detail::-webkit-scrollbar-thumb { background: var(--border); }
+.detail-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 14px auto 18px; }
+.detail-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
+.detail-label { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; color: var(--text); }
+.detail-close { background: var(--surface-2); border: 1px solid var(--border); width: 30px; height: 30px; border-radius: 50%; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-2); transition: background var(--t), transform var(--t); font-family: inherit; }
+.detail-close:active { background: var(--border); transform: scale(0.92); }
+
+/* ── VIEW ── */
+.view-date { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-3); letter-spacing: 0.06em; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.view-date::before { content: ''; display: inline-block; width: 20px; height: 1.5px; background: var(--gold); border-radius: 1px; }
+.view-title { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 700; color: var(--text); margin-bottom: 18px; line-height: 1.3; }
+.view-content { font-size: 15px; line-height: 1.9; color: var(--text-2); white-space: pre-wrap; word-break: break-word; font-weight: 300; border-top: 1px solid var(--border); padding-top: 18px; }
+.view-actions { display: flex; gap: 10px; margin-top: 28px; }
+.edit-btn { flex: 1; padding: 13px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius); font-family: 'Noto Sans JP', sans-serif; font-size: 14.5px; font-weight: 500; cursor: pointer; transition: background var(--t), transform var(--t); }
+.edit-btn:active { transform: scale(0.97); background: #1E3A2B; }
+.delete-btn { padding: 13px 18px; background: var(--danger-light); color: var(--danger); border: 1px solid rgba(155,58,47,0.15); border-radius: var(--radius); font-family: 'Noto Sans JP', sans-serif; font-size: 14.5px; font-weight: 500; cursor: pointer; transition: background var(--t), transform var(--t); }
+.delete-btn:active { transform: scale(0.97); }
+
+/* ── FORM ── */
+.field { margin-bottom: 16px; }
+.field label { display: block; font-size: 10.5px; font-weight: 700; color: var(--text-3); margin-bottom: 7px; letter-spacing: 0.1em; text-transform: uppercase; font-family: 'JetBrains Mono', monospace; }
+.field input, .field textarea { display: block; width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-family: 'Noto Sans JP', sans-serif; font-size: 16px; color: var(--text); background: var(--surface-2); outline: none; -webkit-appearance: none; resize: none; transition: border-color var(--t), background var(--t), box-shadow var(--t); }
+.field input:focus, .field textarea:focus { border-color: var(--accent-mid); background: var(--surface); box-shadow: 0 0 0 3px var(--accent-glow); }
+.field input#fTitle { font-size: 17px; font-weight: 700; }
+.field textarea { height: 160px; line-height: 1.7; font-size: 15px; font-weight: 300; }
+.field-footer { display: flex; justify-content: flex-end; margin-top: 5px; }
+.char-count { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-3); }
+.error-msg { color: var(--danger); font-size: 12px; margin-bottom: 14px; display: none; align-items: center; gap: 6px; background: var(--danger-light); padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(155,58,47,0.15); }
+.error-msg.show { display: flex; }
+.save-btn { width: 100%; padding: 15px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius); font-family: 'Noto Sans JP', sans-serif; font-size: 15px; font-weight: 700; cursor: pointer; letter-spacing: 0.04em; transition: background var(--t), transform var(--t); box-shadow: 0 4px 16px var(--accent-glow); margin-top: 4px; }
+.save-btn:active { transform: scale(0.98); background: #1E3A2B; }
+
+/* ── SETTINGS ── */
+.settings-section-title { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; color: var(--text-3); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 10px; }
+.settings-desc { font-size: 12.5px; color: var(--text-3); line-height: 1.7; margin-bottom: 14px; }
+.settings-divider { border: none; border-top: 1px solid var(--border); margin: 22px 0; }
+.settings-row { display: flex; gap: 10px; }
+.btn-secondary { flex: 1; padding: 13px; background: var(--surface-2); color: var(--text-2); border: 1px solid var(--border); border-radius: var(--radius); font-family: 'Noto Sans JP', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: background var(--t), transform var(--t); text-align: center; }
+.btn-secondary:active { transform: scale(0.97); background: var(--border); }
+.btn-export { flex: 1; padding: 13px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius); font-family: 'Noto Sans JP', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; transition: background var(--t), transform var(--t); box-shadow: 0 4px 16px var(--accent-glow); text-align: center; }
+.btn-export:active { transform: scale(0.97); background: #1E3A2B; }
+.btn-export:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* ── HIGHLIGHT ── */
+mark.hl { background: #FFF5C2; color: var(--text); border-radius: 2px; padding: 0 1px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <span class="header-title">Daily Memo</span>
+    <span class="header-sub">notebook</span>
+  </div>
+  <div class="header-right">
+    <span class="header-count" id="headerCount">0 件</span>
+    <button class="header-settings-btn" id="settingsBtn" title="設定・バックアップ">⚙</button>
+  </div>
+</div>
+
+<div class="search">
+  <div class="search-inner">
+    <span class="search-icon">🔍</span>
+    <input id="searchInput" placeholder="メモを検索..." autocomplete="off" inputmode="search">
+    <button class="search-clear" id="searchClear">✕</button>
+  </div>
+</div>
+
+<div class="list" id="list"></div>
+
+<div class="fab-wrap">
+  <button class="fab" id="fab" title="新規メモ">+</button>
+</div>
+
+<div class="toast" id="toast">
+  <span class="toast-text" id="toastText">削除しました</span>
+  <button class="toast-undo" id="toastUndo" style="display:none">元に戻す</button>
+</div>
+
+<input type="file" id="importFile" accept=".json" style="display:none">
+
+<div class="detail-overlay" id="overlay"></div>
+<div class="detail" id="detail">
+  <div class="detail-handle"></div>
+  <div id="detailContent"></div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var KEY     = 'memo_v18';
+  var NAS_KEY = 'memo_nas_config';
+  var MAX_GEN = 10;
+
+  var state = {
+    memos: [],
+    lastDeleted: null,
+    toastTimer: null,
+    swipe: { el: null, startX: 0, currentX: 0, moved: false }
+  };
+
+  /* ── UUID ── */
+  function uuid() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+      var r = Math.random() * 16 | 0;
+      return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+    });
+  }
+
+  /* ── STORAGE ── */
+  function load() {
+    try { state.memos = JSON.parse(localStorage.getItem(KEY) || '[]'); }
+    catch (e) { state.memos = []; }
+    if (state.memos.length === 0) {
+      ['memo_v17', 'memo_v16'].forEach(function (k) {
+        if (state.memos.length) return;
+        try {
+          var old = JSON.parse(localStorage.getItem(k) || '[]');
+          if (old.length) state.memos = old;
+        } catch (e) {}
+      });
+    }
+    var changed = false;
+    state.memos.forEach(function (m) {
+      if (!m.id) { m.id = uuid(); changed = true; }
+    });
+    if (changed) persist();
+  }
+  function persist() {
+    try { localStorage.setItem(KEY, JSON.stringify(state.memos)); }
+    catch (e) {}
+  }
+
+  /* ── NAS CONFIG ── */
+  function loadNasConfig() {
+    try { return JSON.parse(localStorage.getItem(NAS_KEY) || 'null'); }
+    catch (e) { return null; }
+  }
+  function saveNasConfig(cfg) {
+    try { localStorage.setItem(NAS_KEY, JSON.stringify(cfg)); }
+    catch (e) {}
+  }
+
+  /* ── UTILS ── */
+  function today() { return new Date().toISOString().slice(0, 10); }
+  function nowStr() {
+    var d = new Date();
+    return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) +
+      '_' + pad(d.getHours()) + pad(d.getMinutes());
+  }
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function escHtml(str) {
+    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function highlight(str, q) {
+    var escaped = escHtml(str);
+    if (!q) return escaped;
+    var safe = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return escaped.replace(new RegExp(safe, 'gi'), function (m) { return '<mark class="hl">' + m + '</mark>'; });
+  }
+  function snippet(content, q) {
+    if (!content) return '';
+    if (!q) return escHtml(content.slice(0, 120));
+    var lower = content.toLowerCase();
+    var idx = lower.indexOf(q.toLowerCase());
+    if (idx === -1) return escHtml(content.slice(0, 80));
+    var start = Math.max(0, idx - 30);
+    var end = Math.min(content.length, idx + q.length + 70);
+    var text = (start > 0 ? '…' : '') + content.slice(start, end) + (end < content.length ? '…' : '');
+    return highlight(text, q);
+  }
+
+  /* ── FILTER ── */
+  function filteredMemos() {
+    var q = document.getElementById('searchInput').value.trim().toLowerCase();
+    var result = state.memos.map(function (m, i) { return { m: m, origIdx: i }; });
+    if (!q) return result;
+    return result.filter(function (item) { return JSON.stringify(item.m).toLowerCase().indexOf(q) !== -1; });
+  }
+
+  /* ── RENDER ── */
+  function render() {
+    var list = document.getElementById('list');
+    var q = document.getElementById('searchInput').value.trim();
+    var items = filteredMemos().sort(function (a, b) { return new Date(b.m.date || 0) - new Date(a.m.date || 0); });
+
+    document.getElementById('headerCount').textContent = state.memos.length + ' 件';
+    document.getElementById('searchClear').classList.toggle('visible', q.length > 0);
+
+    if (items.length === 0) {
+      list.innerHTML =
+        '<div class="empty"><span class="empty-icon">📄</span>' +
+        '<div class="empty-title">' + (q ? '見つかりませんでした' : 'まだメモがありません') + '</div>' +
+        '<div class="empty-sub">' + (q ? '別のキーワードで試してみてください' : '右下の ＋ ボタンで\n最初のメモを作りましょう') + '</div></div>';
+      return;
+    }
+
+    state.swipe.el = null;
+    var html = '';
+    items.forEach(function (item) {
+      var m = item.m;
+      var i = item.origIdx;
+      var badge = m.exportedAt ? '<span class="card-backup-badge">✓ backed up</span>' : '';
+      html +=
+        '<div class="swipe-wrap" data-idx="' + i + '">' +
+        '<div class="delete-bg"><div class="delete-bg-icon">🗑</div>削除</div>' +
+        '<div class="card">' +
+        '<div class="card-meta"><span class="card-date">' + escHtml(m.date || '—') + '</span>' + badge + '</div>' +
+        '<div class="card-title">' + highlight(m.title || '(タイトルなし)', q) + '</div>' +
+        (m.content ? '<div class="card-preview">' + snippet(m.content, q) + '</div>' : '') +
+        '</div></div>';
+    });
+
+    list.innerHTML = html;
+
+    list.querySelectorAll('.swipe-wrap').forEach(function (wrap) {
+      var origIdx = parseInt(wrap.dataset.idx, 10);
+      var card = wrap.querySelector('.card');
+      var bg   = wrap.querySelector('.delete-bg');
+      bg.addEventListener('click', function () { deleteItem(origIdx); });
+      card.addEventListener('click', function () { if (!state.swipe.moved) openDetail(origIdx); });
+      card.addEventListener('touchstart', function (e) { touchStart(e, card); }, { passive: true });
+      card.addEventListener('touchmove',  function (e) { touchMove(e, card);  }, { passive: true });
+      card.addEventListener('touchend',   function (e) { touchEnd(e, card);   });
+    });
+  }
+
+  /* ── SWIPE ── */
+  function touchStart(e, el) {
+    state.swipe.startX = e.touches[0].clientX;
+    state.swipe.currentX = e.touches[0].clientX;
+    state.swipe.moved = false;
+    if (state.swipe.el && state.swipe.el !== el) {
+      state.swipe.el.style.transition = 'transform 0.2s ease';
+      state.swipe.el.style.transform = '';
+      state.swipe.el.parentNode.classList.remove('is-swiping');
+      state.swipe.el = null;
+    }
+  }
+  function touchMove(e, el) {
+    state.swipe.currentX = e.touches[0].clientX;
+    var diff = state.swipe.currentX - state.swipe.startX;
+    if (Math.abs(diff) > 8) state.swipe.moved = true;
+    if (diff < 0) {
+      el.parentNode.classList.add('is-swiping');
+      el.style.transition = 'none';
+      el.style.transform = 'translateX(' + Math.max(diff, -80) + 'px)';
+    }
+  }
+  function touchEnd(e, el) {
+    var diff = state.swipe.currentX - state.swipe.startX;
+    el.style.transition = 'transform 0.22s ease';
+    if (diff < -60) {
+      el.parentNode.classList.add('is-swiping');
+      el.style.transform = 'translateX(-80px)';
+      state.swipe.el = el;
+    } else {
+      el.parentNode.classList.remove('is-swiping');
+      el.style.transform = '';
+      state.swipe.el = null;
+    }
+    setTimeout(function () { state.swipe.moved = false; }, 50);
+  }
+
+  /* ── DELETE ── */
+  function deleteItem(origIdx) {
+    state.lastDeleted = { item: Object.assign({}, state.memos[origIdx]), index: origIdx };
+    state.memos.splice(origIdx, 1);
+    persist();
+    render();
+    showToast('削除しました', true);
+  }
+
+  /* ── TOAST ── */
+  function showToast(msg, withUndo) {
+    var toast    = document.getElementById('toast');
+    var toastTxt = document.getElementById('toastText');
+    var toastBtn = document.getElementById('toastUndo');
+    toastTxt.textContent = msg;
+    toastBtn.style.display = withUndo ? '' : 'none';
+    toast.classList.add('show');
+    clearTimeout(state.toastTimer);
+    state.toastTimer = setTimeout(function () {
+      toast.classList.remove('show');
+      state.lastDeleted = null;
+    }, 4500);
+  }
+  document.getElementById('toastUndo').addEventListener('click', function () {
+    if (!state.lastDeleted) return;
+    state.memos.splice(state.lastDeleted.index, 0, state.lastDeleted.item);
+    persist(); render();
+    document.getElementById('toast').classList.remove('show');
+    clearTimeout(state.toastTimer);
+    state.lastDeleted = null;
+  });
+
+  /* ── SHEET ── */
+  function openSheet() {
+    document.getElementById('overlay').classList.add('show');
+    document.getElementById('detail').classList.add('show');
+  }
+  function closeSheet() {
+    document.getElementById('overlay').classList.remove('show');
+    document.getElementById('detail').classList.remove('show');
+  }
+  document.getElementById('overlay').addEventListener('click', closeSheet);
+
+  function openDetail(origIdx) {
+    if (origIdx === undefined || origIdx === null) renderForm(null);
+    else renderView(origIdx);
+  }
+
+  /* ── VIEW ── */
+  function renderView(origIdx) {
+    var m = state.memos[origIdx];
+    var dc = document.getElementById('detailContent');
+    dc.innerHTML =
+      '<div class="detail-header"><div class="detail-label">メモを見る</div><button class="detail-close" id="detailClose">✕</button></div>' +
+      '<div class="view-date">' + escHtml(m.date || '日付なし') + '</div>' +
+      '<div class="view-title">' + escHtml(m.title || '(タイトルなし)') + '</div>' +
+      '<div class="view-content">' + escHtml(m.content || '') + '</div>' +
+      '<div class="view-actions"><button class="edit-btn" id="editBtn">✏️ 編集する</button><button class="delete-btn" id="viewDeleteBtn">🗑</button></div>';
+    document.getElementById('detailClose').addEventListener('click', closeSheet);
+    document.getElementById('editBtn').addEventListener('click', function () { renderForm(origIdx); });
+    document.getElementById('viewDeleteBtn').addEventListener('click', function () {
+      closeSheet();
+      setTimeout(function () { deleteItem(origIdx); }, 200);
+    });
+    openSheet();
+  }
+
+  /* ── FORM ── */
+  function renderForm(origIdx) {
+    var isNew = (origIdx === null || origIdx === undefined);
+    var m = isNew ? { date: today(), title: '', content: '' } : state.memos[origIdx];
+    var dc = document.getElementById('detailContent');
+    dc.innerHTML =
+      '<div class="detail-header"><div class="detail-label">' + (isNew ? '新しいメモ' : 'メモを編集') + '</div><button class="detail-close" id="detailClose">✕</button></div>' +
+      '<div class="error-msg" id="errorMsg">⚠ タイトルを入力してください</div>' +
+      '<div class="field"><label>日付</label><input type="date" id="fDate" value="' + escHtml(m.date) + '"></div>' +
+      '<div class="field"><label>タイトル</label><input type="text" id="fTitle" placeholder="タイトルを入力" value="' + escHtml(m.title) + '" maxlength="80"></div>' +
+      '<div class="field"><label>内容</label><textarea id="fContent" placeholder="メモの内容を入力...">' + escHtml(m.content) + '</textarea>' +
+      '<div class="field-footer"><span class="char-count" id="charCount">0 文字</span></div></div>' +
+      '<button class="save-btn" id="saveBtn">' + (isNew ? '保存する' : '更新する') + '</button>';
+
+    document.getElementById('detailClose').addEventListener('click', closeSheet);
+    var fContent = document.getElementById('fContent');
+    var charCount = document.getElementById('charCount');
+    function updateCount() { charCount.textContent = fContent.value.length + ' 文字'; }
+    fContent.addEventListener('input', updateCount);
+    updateCount();
+
+    document.getElementById('saveBtn').addEventListener('click', function () {
+      var title   = document.getElementById('fTitle').value.trim();
+      var date    = document.getElementById('fDate').value;
+      var content = document.getElementById('fContent').value.trim();
+      var err     = document.getElementById('errorMsg');
+      if (!title) { err.classList.add('show'); document.getElementById('fTitle').focus(); return; }
+      err.classList.remove('show');
+      if (isNew) {
+        state.memos.unshift({ id: uuid(), date: date, title: title, content: content });
+      } else {
+        state.memos[origIdx].date    = date;
+        state.memos[origIdx].title   = title;
+        state.memos[origIdx].content = content;
+        state.memos[origIdx].exportedAt = null; // 編集でバックアップ済みをリセット
+      }
+      persist(); closeSheet(); render();
+    });
+
+    openSheet();
+    setTimeout(function () { var t = document.getElementById('fTitle'); if (t) t.focus(); }, 420);
+  }
+
+  /* ════════════════════════════
+     ── SETTINGS SHEET ──
+  ════════════════════════════ */
+  function openSettings() {
+    var cfg = loadNasConfig() || { ip: '', port: '5001', user: '', pass: '', folder: '' };
+    var dc = document.getElementById('detailContent');
+    dc.innerHTML =
+      '<div class="detail-header"><div class="detail-label">設定 & バックアップ</div><button class="detail-close" id="detailClose">✕</button></div>' +
+
+      '<div class="settings-section-title">バックアップ</div>' +
+      '<div class="settings-desc">エクスポートボタンを押すとメモ全件をJSONファイルとして保存します。NASが設定されている場合はNASへ直接送信し、未設定または送信失敗時はiPhoneのファイルアプリに保存されます。</div>' +
+      '<div class="settings-row"><button class="btn-export" id="exportBtn">⬆ エクスポート</button></div>' +
+
+      '<hr class="settings-divider">' +
+
+      '<div class="settings-section-title">リストア</div>' +
+      '<div class="settings-desc">バックアップしたJSONファイルを読み込みます。既存のメモはそのまま残し、新しいメモのみ追加されます。</div>' +
+      '<div class="settings-row"><button class="btn-secondary" id="importBtn">⬇ インポート</button></div>' +
+
+      '<hr class="settings-divider">' +
+
+      '<div class="settings-section-title">NAS設定（オプション）</div>' +
+      '<div class="settings-desc">Synology NASに直接バックアップする場合のみ設定してください。未設定でもエクスポートは使えます。</div>' +
+      '<div class="field"><label>NAS IPアドレス</label><input type="text" id="nasIp" placeholder="例: 192.168.0.170" value="' + escHtml(cfg.ip) + '" inputmode="url" autocomplete="off"></div>' +
+      '<div class="field"><label>ポート番号</label><input type="text" id="nasPort" placeholder="5001" value="' + escHtml(cfg.port) + '" inputmode="numeric"></div>' +
+      '<div class="field"><label>ユーザー名</label><input type="text" id="nasUser" placeholder="API_User" value="' + escHtml(cfg.user) + '" autocomplete="off"></div>' +
+      '<div class="field"><label>パスワード</label><input type="password" id="nasPass" placeholder="••••••••" value="' + escHtml(cfg.pass) + '" autocomplete="off"></div>' +
+      '<div class="field"><label>保存先フォルダ</label><input type="text" id="nasFolder" placeholder="homes/username/MemoBackup" value="' + escHtml(cfg.folder) + '" autocomplete="off"></div>' +
+      '<button class="save-btn" id="nasSaveBtn">NAS設定を保存</button>';
+
+    document.getElementById('detailClose').addEventListener('click', closeSheet);
+
+    document.getElementById('exportBtn').addEventListener('click', doExport);
+    document.getElementById('importBtn').addEventListener('click', function () {
+      document.getElementById('importFile').click();
+    });
+    document.getElementById('nasSaveBtn').addEventListener('click', function () {
+      var c = {
+        ip:     document.getElementById('nasIp').value.trim(),
+        port:   document.getElementById('nasPort').value.trim() || '5001',
+        user:   document.getElementById('nasUser').value.trim(),
+        pass:   document.getElementById('nasPass').value,
+        folder: document.getElementById('nasFolder').value.trim()
+      };
+      saveNasConfig(c);
+      showToast('NAS設定を保存しました', false);
+    });
+
+    openSheet();
+  }
+
+  /* ── EXPORT ── */
+  function doExport() {
+    var btn = document.getElementById('exportBtn');
+    if (btn) { btn.disabled = true; btn.textContent = '送信中…'; }
+
+    var cfg    = loadNasConfig();
+    var hasNas = cfg && cfg.ip && cfg.user && cfg.pass && cfg.folder;
+    var filename = 'memo_backup_' + nowStr() + '.json';
+    var json = JSON.stringify({ exported: new Date().toISOString(), memos: state.memos }, null, 2);
+
+    function onDone(toNas) {
+      markAllExported();
+      closeSheet();
+      showToast(toNas ? 'NASにバックアップしました ✓' : 'エクスポートしました ✓', false);
+    }
+
+    if (hasNas) {
+      exportToNas(cfg, filename, json, function (ok, errMsg) {
+        if (ok) {
+          onDone(true);
+        } else {
+          downloadJson(filename, json);
+          markAllExported();
+          closeSheet();
+          showToast('NAS接続失敗 → ファイルに保存しました', false);
+          console.warn('NAS error:', errMsg);
+        }
+      });
+    } else {
+      downloadJson(filename, json);
+      onDone(false);
+    }
+  }
+
+  function markAllExported() {
+    var now = new Date().toISOString();
+    state.memos.forEach(function (m) { m.exportedAt = now; });
+    persist();
+    render();
+  }
+
+  /* ── NAS: Synology File Station API ── */
+  function exportToNas(cfg, filename, json, cb) {
+    var base = 'https://' + cfg.ip + ':' + cfg.port + '/webapi';
+
+    // 1. ログイン
+    fetch(base + '/auth.cgi?api=SYNO.API.Auth&version=3&method=login' +
+      '&account=' + encodeURIComponent(cfg.user) +
+      '&passwd='  + encodeURIComponent(cfg.pass) +
+      '&session=FileStation&format=sid')
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      if (!data.success) throw new Error('ログイン失敗');
+      var sid = data.data.sid;
+
+      // 2. アップロード
+      var blob = new Blob([json], { type: 'application/json' });
+      var fd = new FormData();
+      fd.append('api', 'SYNO.FileStation.Upload');
+      fd.append('version', '2');
+      fd.append('method', 'upload');
+      fd.append('path', '/' + cfg.folder.replace(/^\//, ''));
+      fd.append('create_parents', 'true');
+      fd.append('overwrite', 'true');
+      fd.append('_sid', sid);
+      fd.append('file', blob, filename);
+
+      return fetch(base + '/entry.cgi', { method: 'POST', body: fd })
+        .then(function (r) { return r.json(); })
+        .then(function (up) {
+          if (!up.success) throw new Error('アップロード失敗');
+          // 3. 古い世代を削除
+          pruneOldBackups(base, sid, cfg.folder, function () {
+            logoutNas(base, sid);
+            cb(true);
+          });
+        });
+    })
+    .catch(function (e) { cb(false, e.message); });
+  }
+
+  function pruneOldBackups(base, sid, folder, done) {
+    fetch(base + '/entry.cgi?api=SYNO.FileStation.List&version=2&method=list' +
+      '&folder_path=/' + encodeURIComponent(folder.replace(/^\//, '')) +
+      '&pattern=memo_backup_*.json&sort_by=name&sort_direction=ASC' +
+      '&_sid=' + encodeURIComponent(sid))
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      if (!data.success) { done(); return; }
+      var files = data.data.files || [];
+      var toDelete = files.slice(0, Math.max(0, files.length - MAX_GEN));
+      if (!toDelete.length) { done(); return; }
+      var paths = toDelete.map(function (f) { return f.path; });
+      fetch(base + '/entry.cgi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'api=SYNO.FileStation.Delete&version=2&method=start' +
+          '&path=' + encodeURIComponent(JSON.stringify(paths)) +
+          '&_sid=' + encodeURIComponent(sid)
+      }).then(function () { done(); }).catch(function () { done(); });
+    })
+    .catch(function () { done(); });
+  }
+
+  function logoutNas(base, sid) {
+    fetch(base + '/auth.cgi?api=SYNO.API.Auth&version=1&method=logout&session=FileStation&_sid=' +
+      encodeURIComponent(sid)).catch(function () {});
+  }
+
+  /* ── DOWNLOAD FALLBACK ── */
+  function downloadJson(filename, json) {
+    var blob = new Blob([json], { type: 'application/json' });
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
+  }
+
+  /* ── IMPORT ── */
+  document.getElementById('importFile').addEventListener('change', function (e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function (ev) {
+      try {
+        var data = JSON.parse(ev.target.result);
+        var imported = Array.isArray(data) ? data : (data.memos || []);
+        var existingIds = {};
+        state.memos.forEach(function (m) { existingIds[m.id] = true; });
+        var added = 0;
+        imported.forEach(function (m) {
+          if (!m.id) m.id = uuid();
+          if (!existingIds[m.id]) { state.memos.push(m); added++; }
+        });
+        persist(); render();
+        showToast(added + ' 件のメモを追加しました', false);
+      } catch (err) {
+        showToast('ファイルの読み込みに失敗しました', false);
+      }
+      e.target.value = '';
+    };
+    reader.readAsText(file);
+  });
+
+  /* ── FAB & SEARCH ── */
+  document.getElementById('fab').addEventListener('click', function () { openDetail(); });
+  document.getElementById('settingsBtn').addEventListener('click', openSettings);
+  document.getElementById('searchInput').addEventListener('input', render);
+  document.getElementById('searchInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') render(); });
+  document.getElementById('searchClear').addEventListener('click', function () {
+    document.getElementById('searchInput').value = '';
+    render();
+    document.getElementById('searchInput').focus();
+  });
+
+  /* ── BOOT ── */
+  load();
+  render();
+
+}());
+</script>
+</body>
+</html>
